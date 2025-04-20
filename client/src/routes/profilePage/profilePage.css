@@ -1,0 +1,75 @@
+.profilePage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  gap: 16px;
+}
+
+.profileImg {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.profileName {
+    font-size: 36px;
+    font-weight: 500;
+}
+.profileHandle {
+    font-weight: 300;
+    color: gray;
+}
+
+.followCounts {
+    font-weight: 500;
+}
+
+.profileInteractions {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+}
+.interactionButtons {
+    display: flex;
+    gap: 16px;
+}
+
+.interactionButtons button {
+    padding: 16px;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.interactionButtons button:last-child {
+    background-color: #e50829;
+    color: white;
+}
+
+.interactionButtons button:last-child:hover {
+    background-color: #c1011e;
+}
+
+.profileOptions {
+    display:flex;
+    gap: 16px;
+    margin-top:32px;
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
+.profileOptions span {
+    cursor: pointer;
+    padding: 8px 8px;
+
+}
+
+.profileOptions span:hover {
+    color: gray;
+}
+
+.active {
+    border-bottom: 3px solid black;
+}

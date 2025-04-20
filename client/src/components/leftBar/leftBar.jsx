@@ -1,32 +1,33 @@
 import "./leftBar.css";
+import { Link } from "react-router";
 
 const LeftBar = () => {
   return (
     <div className="leftBar">
       <div className="menuIcons">
-        <a href="/">
+        <Link to="/">
           <img src="/general/logo.png" alt="Logo" className="logo" />
-        </a>
-        <a href="/">
+        </Link>
+        <Link to="/">
           <img src="/general/home.svg" alt="Home" className="menuIcon" />
-        </a>
-        <a href="/">
+        </Link>
+        <Link to="/create">
           <img src="/general/create.svg" alt="Logo" className="menuIcon" />
-        </a>
-        <a href="/">
+        </Link>
+        <Link to="/">
           <img src="/general/updates.svg" alt="Updates" className="menuIcon" />
-        </a>
-        <a href="/">
+        </Link>
+        <Link to="/">
           <img
             src="/general/messages.svg"
             alt="Messages"
             className="menuIcon"
           />
-        </a>
+        </Link>
       </div>
-      <a href="/">
+      <Link to="/">
         <img src="/general/settings.svg" alt="Settings" className="menuIcon" />
-      </a>
+      </Link>
     </div>
   );
 };

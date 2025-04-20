@@ -19,7 +19,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/pin/:id" element={<PostPage />} />
           <Route path="/create" element={<CreatePage />} />
 
-          <Route path=":/username" element={<ProfilePage />} />
+          <Route path="/:username" element={<ProfilePage />} />
           <Route path="/search" element={<SearchPage />} />
         </Route>
         <Route path="/auth" element={<AuthPage />} />
