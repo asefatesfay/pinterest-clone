@@ -1,12 +1,34 @@
 import "./userButton.css";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { Link, useLocation } from "react-router";
 
 const UserButton = () => {
   const currentUser = true;
   const [open, setOpen] = useState(false);
+  const popupRef = useRef(null);
+  const location = useLocation();
+
+  // Close the popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Close the popup when the route changes
+  useEffect(() => {
+    setOpen(false);
+  }, [location]);
 
   return currentUser ? (
-    <div className="userButton">
+    <div className="userButton" ref={popupRef}>
       <img src="/general/noAvatar.png" alt="user" />
       <img
         onClick={() => setOpen((prev) => !prev)}
@@ -16,7 +38,9 @@ const UserButton = () => {
       />
       {open && (
         <div className="userOptions">
-          <div className="userOption">Profile</div>
+          <Link className="userOption" to="/profile">
+            Profile
+          </Link>
           <div className="userOption">Settings</div>
           <div className="userOption">Logout</div>
         </div>
