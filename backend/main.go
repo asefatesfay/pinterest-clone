@@ -16,7 +16,7 @@ func init() {
 
 	// Define routes
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello from Go-chi-1!"))
+		w.Write([]byte("Hello from Go-chi!"))
 	})
 
 	r.Get("/api", func(w http.ResponseWriter, r *http.Request) {
