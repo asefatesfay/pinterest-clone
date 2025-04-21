@@ -5,7 +5,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/awslabs/aws-lambda-go-api-proxy/chi"
+	chiadapter "github.com/awslabs/aws-lambda-go-api-proxy/chi"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -16,7 +16,7 @@ func init() {
 
 	// Define routes
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello from Go-chi!"))
+		w.Write([]byte("Hello from Go-chi-1!"))
 	})
 
 	r.Get("/api", func(w http.ResponseWriter, r *http.Request) {
