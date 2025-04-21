@@ -40,15 +40,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
 
-      - name: Create Lambda function (if not exists)
-        run: |
-          aws lambda get-function --function-name go-backend || \
-          aws lambda create-function \
-            --function-name go-backend \
-            --runtime go1.x \
-            --role arn:aws:iam::123456789012:role/your-lambda-execution-role \
-            --handler main \
-            --zip-file fileb://backend/main.zip
+    #   - name: Create Lambda function (if not exists)
+    #     run: |
+    #       aws lambda get-function --function-name go-backend || \
+    #       aws lambda create-function \
+    #         --function-name go-backend \
+    #         --runtime go1.x \
+    #         --role arn:aws:iam::123456789012:role/your-lambda-execution-role \
+    #         --handler main \
+    #         --zip-file fileb://backend/main.zip
 
       - name: Update Lambda function
         run: |
