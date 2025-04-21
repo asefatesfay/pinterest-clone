@@ -56,31 +56,31 @@ jobs:
             --function-name go-backend \
             --zip-file fileb://backend/main.zip
 
-      - name: Configure API Gateway
-        run: |
-          # Check if the API Gateway exists
-          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='go-backend-api'].id" --output text) || true
+            - name: Configure API Gateway
+            run: |
+              # Check if the API Gateway exists
+              API_ID=$(aws apigateway get-rest-apis --query "items[?name=='go-backend-api'].id" --output text) || true
+              
+              # Create API Gateway if it doesn't exist
+              if [ -z "$API_ID" ]; then
+                API_ID=$(aws apigateway create-rest-api --name "go-backend-api" --query "id" --output text)
+              fi
           
-          # Create API Gateway if it doesn't exist
-          if [ -z "$API_ID" ]; then
-            API_ID=$(aws apigateway create-rest-api --name "go-backend-api" --query "id" --output text)
-          fi
-
-          # Get the root resource ID
-          ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query "items[?path=='/'].id" --output text)
-
-          # Create a resource for the Lambda function
-          RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "api" --query "id" --output text)
-
-          # Create a POST method for the resource
-          aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method POST --authorization-type "NONE"
-
-          # Integrate the POST method with the Lambda function
-          aws apigateway put-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method POST \
-            --type AWS_PROXY --integration-http-method POST \
-            --uri arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:123456789012:function:go-backend/invocations
-
-          # Deploy the API Gateway
-          aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod
-
-          echo "API Gateway deployed at: https://$API_ID.execute-api.us-west-2.amazonaws.com/prod/api"
+              # Get the root resource ID
+              ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query "items[?path=='/'].id" --output text)
+          
+              # Create a resource for the Lambda function
+              RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "api" --query "id" --output text)
+          
+              # Create a GET method for the resource
+              aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --authorization-type "NONE"
+          
+              # Integrate the GET method with the Lambda function
+              aws apigateway put-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET \
+                --type AWS_PROXY --integration-http-method POST \
+                --uri arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:123456789012:function:go-backend/invocations
+          
+              # Deploy the API Gateway
+              aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod
+          
+              echo "API Gateway deployed at: https://$API_ID.execute-api.us-west-2.amazonaws.com/prod/api"
