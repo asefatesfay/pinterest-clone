@@ -1,0 +1,42 @@
+name: Deploy Go Backend to AWS Lambda
+
+on:
+  push:
+    paths:
+      - 'backend/**' # Trigger only when changes are made to the backend folder
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.20
+
+      - name: Build Go binary
+        run: |
+          cd backend
+          GOOS=linux GOARCH=amd64 go build -o main main.go
+
+      - name: Zip binary
+        run: |
+          cd backend
+          zip main.zip main
+
+      - name: Deploy to AWS Lambda
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Update Lambda function
+        run: |
+          aws lambda update-function-code \
+            --function-name go-backend \
+            --zip-file fileb://backend/main.zip
