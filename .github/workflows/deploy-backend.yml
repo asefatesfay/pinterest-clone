@@ -68,6 +68,14 @@ jobs:
             --type AWS_PROXY --integration-http-method POST \
             --uri arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:123456789012:function:node-backend/invocations
 
+          # Add permission for API Gateway to invoke the Lambda function
+          aws lambda add-permission \
+            --function-name node-backend \
+            --statement-id apigateway-access \
+            --action lambda:InvokeFunction \
+            --principal apigateway.amazonaws.com \
+            --source-arn arn:aws:execute-api:us-west-2:123456789012:$API_ID/*/GET/api || true
+
           # Deploy the API Gateway
           aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod
 
