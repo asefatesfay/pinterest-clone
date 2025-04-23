@@ -76,7 +76,7 @@ jobs:
             --statement-id apigateway-access \
             --action lambda:InvokeFunction \
             --principal apigateway.amazonaws.com \
-            --source-arn arn:aws:execute-api:us-west-2:123456789012:$API_ID/*/GET/api || true
+            --source-arn arn:aws:execute-api:us-west-2:195275664182:$API_ID/*/GET/api || true
 
           # Create or update a GET method for the resource
           METHOD_EXISTS=$(aws apigateway get-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --query "httpMethod" --output text || true)
