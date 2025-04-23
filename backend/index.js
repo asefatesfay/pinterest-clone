@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api", (req, res) => {
-  res.json({ message: "Welcome to the API!" });
+  res.json({ message: "Welcome to the API-1!" });
 });
 
 // Export the app as a Lambda handler
