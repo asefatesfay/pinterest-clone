@@ -66,6 +66,18 @@ jobs:
             echo "/api resource already exists with ID: $RESOURCE_ID"
           fi
 
+          # Fetch the correct Lambda ARN
+          LAMBDA_ARN=$(aws lambda get-function --function-name node-backend --query "Configuration.FunctionArn" --output text)
+
+          # Add permission for API Gateway to invoke the Lambda function
+          echo "Adding permission for API Gateway to invoke the Lambda function..."
+          aws lambda add-permission \
+            --function-name node-backend \
+            --statement-id apigateway-access \
+            --action lambda:InvokeFunction \
+            --principal apigateway.amazonaws.com \
+            --source-arn arn:aws:execute-api:us-west-2:123456789012:$API_ID/*/GET/api || true
+
           # Create or update a GET method for the resource
           METHOD_EXISTS=$(aws apigateway get-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --query "httpMethod" --output text || true)
           if [ -z "$METHOD_EXISTS" ]; then
@@ -76,19 +88,20 @@ jobs:
           fi
 
           # Integrate the GET method with the Lambda function
+          echo "Integrating GET method with Lambda function..."
           aws apigateway put-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET \
             --type AWS_PROXY --integration-http-method POST \
-            --uri arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:123456789012:function:node-backend/invocations
+            --uri arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/$LAMBDA_ARN/invocations
 
-          # Add permission for API Gateway to invoke the Lambda function
-          aws lambda add-permission \
-            --function-name node-backend \
-            --statement-id apigateway-access \
-            --action lambda:InvokeFunction \
-            --principal apigateway.amazonaws.com \
-            --source-arn arn:aws:execute-api:us-west-2:123456789012:$API_ID/*/GET/api || true
+          # Verify the integration
+          INTEGRATION_URI=$(aws apigateway get-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --query "uri" --output text)
+          if [[ "$INTEGRATION_URI" != *"$LAMBDA_ARN"* ]]; then
+            echo "Error: Integration URI does not match the Lambda function ARN."
+            exit 1
+          fi
 
           # Deploy the API Gateway
+          echo "Deploying API Gateway..."
           aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod
 
           echo "API Gateway deployed at: https://$API_ID.execute-api.us-west-2.amazonaws.com/prod/api"
