@@ -1,5 +1,5 @@
 import express from "express";
-import { express as serverlessExpress } from "aws-lambda-ric";
+import serverlessExpress from "@codegenie/serverless-express";
 
 const app = express();
 
@@ -16,4 +16,4 @@ app.get("/api", (req, res) => {
 });
 
 // Export the app as a Lambda handler
-export const handler = serverlessExpress(app);
+export const handler = serverlessExpress({ app });
