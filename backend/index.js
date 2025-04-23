@@ -8,7 +8,7 @@ app.use(express.json());
 
 // Define routes
 app.get("/", (req, res) => {
-  res.send("Hello from Express on AWS Lambda1!");
+  res.send("Hello from Express on AWS Lambda!");
 });
 
 app.get("/api", (req, res) => {

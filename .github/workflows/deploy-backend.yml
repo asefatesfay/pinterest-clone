@@ -58,16 +58,22 @@ jobs:
           ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query "items[?path=='/'].id" --output text)
 
           # Check if the /api resource already exists
-          RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query "items[?pathPart=='api'].id" --output text)
-          # if [ -z "$RESOURCE_ID" ]; then
-          #   echo "/api resource does not exist. Creating a new one..."
-          #   RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "api" --query "id" --output text)
-          # else
-          #   echo "/api resource already exists with ID: $RESOURCE_ID"
-          # fi
+          RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query "items[?path=='/api'].id" --output text)
+          if [ -z "$RESOURCE_ID" ]; then
+            echo "/api resource does not exist. Creating a new one..."
+            RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "api" --query "id" --output text)
+          else
+            echo "/api resource already exists with ID: $RESOURCE_ID"
+          fi
 
-          # Create a GET method for the resource
-          aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --authorization-type "NONE"
+          # Create or update a GET method for the resource
+          METHOD_EXISTS=$(aws apigateway get-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --query "httpMethod" --output text || true)
+          if [ -z "$METHOD_EXISTS" ]; then
+            echo "Creating GET method for /api resource..."
+            aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --authorization-type "NONE"
+          else
+            echo "GET method already exists for /api resource."
+          fi
 
           # Integrate the GET method with the Lambda function
           aws apigateway put-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET \
