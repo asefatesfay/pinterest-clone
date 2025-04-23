@@ -1,5 +1,5 @@
-const express = require("express");
-const serverless = require("aws-lambda-ric");
+import express from "express";
+import serverless from "aws-lambda-ric";
 
 const app = express();
 
@@ -8,7 +8,7 @@ app.use(express.json());
 
 // Define routes
 app.get("/", (req, res) => {
-  res.send("Hello from Express on AWS Lambda-1!");
+  res.send("Hello from Express on AWS Lambda!");
 });
 
 app.get("/api", (req, res) => {
@@ -16,4 +16,4 @@ app.get("/api", (req, res) => {
 });
 
 // Export the app as a Lambda handler
-exports.handler = serverless.express(app);
+export const handler = serverless.express(app);
