@@ -59,12 +59,12 @@ jobs:
 
           # Check if the /api resource already exists
           RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query "items[?pathPart=='api'].id" --output text)
-          if [ -z "$RESOURCE_ID" ]; then
-            echo "/api resource does not exist. Creating a new one..."
-            RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "api" --query "id" --output text)
-          else
-            echo "/api resource already exists with ID: $RESOURCE_ID"
-          fi
+          # if [ -z "$RESOURCE_ID" ]; then
+          #   echo "/api resource does not exist. Creating a new one..."
+          #   RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "api" --query "id" --output text)
+          # else
+          #   echo "/api resource already exists with ID: $RESOURCE_ID"
+          # fi
 
           # Create a GET method for the resource
           aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --authorization-type "NONE"
