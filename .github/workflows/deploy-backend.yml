@@ -1,4 +1,4 @@
-name: Deploy Go Backend to AWS Lambda with API Gateway
+name: Deploy Node.js Backend to AWS Lambda with API Gateway
 
 on:
   push:
@@ -13,35 +13,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          go-version: 1.24.1
+          node-version: 18
 
       - name: Install dependencies
         run: |
           cd backend
-          go mod tidy
+          npm install
 
-      - name: Build Go binary
+      - name: Zip application
         run: |
           cd backend
-          GOOS=linux GOARCH=amd64 go build -o main main.go
-
-      - name: Verify binary
-        run: |
-          cd backend
-          if [ ! -f main ]; then echo "Error: Binary not found!" && exit 1; fi
-
-      - name: Zip binary
-        run: |
-          cd backend
-          zip main.zip main
-
-      - name: Verify zip file
-        run: |
-          cd backend
-          unzip -l main.zip | grep main || (echo "Error: Binary not in zip file!" && exit 1)
+          zip -r app.zip .
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -53,20 +38,37 @@ jobs:
       - name: Update Lambda function
         run: |
           aws lambda update-function-code \
-            --function-name go-backend \
-            --zip-file fileb://backend/main.zip
+            --function-name node-backend \
+            --zip-file fileb://backend/app.zip
 
       - name: Configure API Gateway
         run: |
-          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='go-backend-api'].id" --output text) || true
+          # Check if the API Gateway exists
+          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='node-backend-api'].id" --output text) || true
+          
+          # Skip creation if API Gateway exists
           if [ -z "$API_ID" ]; then
-            API_ID=$(aws apigateway create-rest-api --name "go-backend-api" --query "id" --output text)
+            echo "API Gateway does not exist. Creating a new one..."
+            API_ID=$(aws apigateway create-rest-api --name "node-backend-api" --query "id" --output text)
+          else
+            echo "API Gateway already exists with ID: $API_ID"
           fi
+
+          # Get the root resource ID
           ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query "items[?path=='/'].id" --output text)
+
+          # Create a resource for the Lambda function
           RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "api" --query "id" --output text)
+
+          # Create a GET method for the resource
           aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --authorization-type "NONE"
+
+          # Integrate the GET method with the Lambda function
           aws apigateway put-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET \
             --type AWS_PROXY --integration-http-method POST \
-            --uri arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:123456789012:function:go-backend/invocations
+            --uri arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:123456789012:function:node-backend/invocations
+
+          # Deploy the API Gateway
           aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod
+
           echo "API Gateway deployed at: https://$API_ID.execute-api.us-west-2.amazonaws.com/prod/api"
