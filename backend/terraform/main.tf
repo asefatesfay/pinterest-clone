@@ -2,10 +2,16 @@ provider "aws" {
   region = "us-west-2"
 }
 
+# Generate SSH Key Pair on the Fly
+resource "tls_private_key" "deployer_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
 # Key Pair for SSH Access
 resource "aws_key_pair" "deployer_key" {
   key_name   = "deployer-key"
-  public_key = file("~/.ssh/id_rsa.pub") # Path to your public SSH key
+  public_key = tls_private_key.deployer_key.public_key_openssh
 }
 
 # Security Group for EC2 Instance
@@ -61,4 +67,10 @@ resource "aws_instance" "pinterest_clone_instance" {
 # Output the public IP of the EC2 instance
 output "ec2_public_ip" {
   value = aws_instance.pinterest_clone_instance.public_ip
+}
+
+# Output the Private Key for SSH Access
+output "private_key" {
+  value     = tls_private_key.deployer_key.private_key_pem
+  sensitive = true
 }
