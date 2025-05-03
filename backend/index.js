@@ -4,7 +4,7 @@ const app = express();
 
 app.use(express.json());
 app.get("/", (req, res) => {
-  res.send("Hello from Express-v1!");
+  res.send("Hello from Express!");
 });
 
 app.get("/api", (req, res) => {
