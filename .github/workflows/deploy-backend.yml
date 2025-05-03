@@ -1,107 +1,62 @@
-name: Deploy Node.js Backend to AWS Lambda with API Gateway
+name: Deploy Backend to EC2 with Terraform
 
 on:
   push:
-    paths:
-      - 'backend/**'
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      # Step 2: Set up Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
         with:
-          node-version: 18
+          terraform_version: 1.5.0
 
-      - name: Install dependencies
+      # Step 3: Initialize Terraform
+      - name: Terraform Init
+        working-directory: backend/terraform
+        run: terraform init
+
+      # Step 4: Apply Terraform to create EC2 instance
+      - name: Terraform Apply
+        working-directory: backend/terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: terraform apply -auto-approve
+
+      # Step 5: Fetch EC2 Public IP
+      - name: Get EC2 Public IP
+        id: ec2_ip
+        working-directory: backend/terraform
+        run: echo "::set-output name=public_ip::$(terraform output -raw ec2_public_ip)"
+
+      # Step 6: Deploy Backend to EC2
+      - name: Deploy Backend to EC2
+        env:
+          EC2_PUBLIC_IP: ${{ steps.ec2_ip.outputs.public_ip }}
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          cd backend
-          npm install
-
-      - name: Zip application
-        run: |
-          cd backend
-          zip -r app.zip .
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
-
-      - name: Update Lambda function
-        run: |
-          aws lambda update-function-code \
-            --function-name node-backend \
-            --zip-file fileb://backend/app.zip
-
-      - name: Configure API Gateway
-        run: |
-          # Check if the API Gateway exists
-          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='node-backend-api'].id" --output text) || true
-          
-          # Skip creation if API Gateway exists
-          if [ -z "$API_ID" ]; then
-            echo "API Gateway does not exist. Creating a new one..."
-            API_ID=$(aws apigateway create-rest-api --name "node-backend-api" --query "id" --output text)
-          else
-            echo "API Gateway already exists with ID: $API_ID"
-          fi
-
-          # Get the root resource ID
-          ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query "items[?path=='/'].id" --output text)
-
-          # Check if the /api resource already exists
-          RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query "items[?path=='/api'].id" --output text)
-          if [ -z "$RESOURCE_ID" ]; then
-            echo "/api resource does not exist. Creating a new one..."
-            RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "api" --query "id" --output text)
-          else
-            echo "/api resource already exists with ID: $RESOURCE_ID"
-          fi
-
-          # Fetch the correct Lambda ARN
-          LAMBDA_ARN=$(aws lambda get-function --function-name node-backend --query "Configuration.FunctionArn" --output text)
-
-          # Add permission for API Gateway to invoke the Lambda function
-          echo "Adding permission for API Gateway to invoke the Lambda function..."
-          aws lambda add-permission \
-            --function-name node-backend \
-            --statement-id apigateway-access \
-            --action lambda:InvokeFunction \
-            --principal apigateway.amazonaws.com \
-            --source-arn arn:aws:execute-api:us-west-2:195275664182:$API_ID/*/GET/api || true
-
-          # Create or update a GET method for the resource
-          METHOD_EXISTS=$(aws apigateway get-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --query "httpMethod" --output text || true)
-          if [ -z "$METHOD_EXISTS" ]; then
-            echo "Creating GET method for /api resource..."
-            aws apigateway put-method --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --authorization-type "NONE"
-          else
-            echo "GET method already exists for /api resource."
-          fi
-
-          # Integrate the GET method with the Lambda function
-          echo "Integrating GET method with Lambda function..."
-          aws apigateway put-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET \
-            --type AWS_PROXY --integration-http-method POST \
-            --uri arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/$LAMBDA_ARN/invocations
-
-          # Verify the integration
-          INTEGRATION_URI=$(aws apigateway get-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method GET --query "uri" --output text)
-          if [[ "$INTEGRATION_URI" != *"$LAMBDA_ARN"* ]]; then
-            echo "Error: Integration URI does not match the Lambda function ARN."
-            exit 1
-          fi
-
-          # Deploy the API Gateway
-          echo "Deploying API Gateway..."
-          aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod
-
-          echo "API Gateway deployed at: https://$API_ID.execute-api.us-west-2.amazonaws.com/prod/api"
+          echo "Deploying to EC2 instance at $EC2_PUBLIC_IP..."
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          scp -o StrictHostKeyChecking=no backend.tar ec2-user@$EC2_PUBLIC_IP:/home/ec2-user/
+          ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP << EOF
+            echo "Loading Docker image on EC2 instance..."
+            docker load -i /home/ec2-user/backend.tar
+            echo "Stopping existing container (if any)..."
+            docker stop pinterest-clone-backend || true
+            docker rm pinterest-clone-backend || true
+            echo "Starting new container..."
+            docker run -d --name pinterest-clone-backend -p 3000:3000 pinterest-clone-backend:latest
+            echo "Deployment complete. Application is running on port 3000."
+          EOF

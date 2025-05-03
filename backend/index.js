@@ -1,19 +1,17 @@
 import express from "express";
-import serverlessExpress from "@codegenie/serverless-express";
 
 const app = express();
 
-// Middleware to parse JSON
 app.use(express.json());
-
-// Define routes
 app.get("/", (req, res) => {
-  res.send("Hello from Express on AWS Lambda!");
+  res.send("Hello from Express!");
 });
 
 app.get("/api", (req, res) => {
-  res.json({ message: "Welcome to the API-1!" });
+  res.json({ message: "Welcome to the API!" });
 });
 
-// Export the app as a Lambda handler
-export const handler = serverlessExpress({ app });
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
