@@ -1,5 +1,16 @@
+# Configure the AWS provider
 provider "aws" {
   region = "us-west-2"
+}
+
+# Optional: Configure the S3 backend for remote state storage
+terraform {
+  backend "s3" {
+    bucket  = "pinterest-clone-terraform-state" # Replace with your S3 bucket name
+    key     = "backend/terraform.tfstate"       # Path to the state file in the bucket
+    region  = "us-west-2"                       # AWS region
+    encrypt = true                              # Encrypt the state file
+  }
 }
 
 # Generate SSH Key Pair on the Fly
