@@ -48,13 +48,13 @@ resource "aws_instance" "pinterest_clone_instance" {
     Name = "pinterest-clone-instance"
   }
 
-  # User data to install Docker
+  # User data to install Node.js and PM2
   user_data = <<-EOF
               #!/bin/bash
               yum update -y
-              yum install docker -y
-              service docker start
-              usermod -aG docker ec2-user
+              curl -sL https://rpm.nodesource.com/setup_18.x | bash -
+              yum install -y nodejs git
+              npm install -g pm2
               EOF
 }
 

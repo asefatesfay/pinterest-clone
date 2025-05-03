@@ -39,24 +39,24 @@ jobs:
         working-directory: backend/terraform
         run: echo "::set-output name=public_ip::$(terraform output -raw ec2_public_ip)"
 
-      # Step 6: Deploy Backend to EC2
-      - name: Deploy Backend to EC2
+      # Step 6: Deploy Node.js Application to EC2
+      - name: Deploy Node.js Application
         env:
           EC2_PUBLIC_IP: ${{ steps.ec2_ip.outputs.public_ip }}
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          echo "Deploying to EC2 instance at $EC2_PUBLIC_IP..."
+          echo "Deploying Node.js application to EC2 instance at $EC2_PUBLIC_IP..."
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          scp -o StrictHostKeyChecking=no backend.tar ec2-user@$EC2_PUBLIC_IP:/home/ec2-user/
+          scp -o StrictHostKeyChecking=no -r backend/ ec2-user@$EC2_PUBLIC_IP:/home/ec2-user/
           ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP << EOF
-            echo "Loading Docker image on EC2 instance..."
-            docker load -i /home/ec2-user/backend.tar
-            echo "Stopping existing container (if any)..."
-            docker stop pinterest-clone-backend || true
-            docker rm pinterest-clone-backend || true
-            echo "Starting new container..."
-            docker run -d --name pinterest-clone-backend -p 3000:3000 pinterest-clone-backend:latest
+            echo "Installing dependencies..."
+            cd /home/ec2-user/backend
+            npm install
+            echo "Starting the application with PM2..."
+            pm2 stop all || true
+            pm2 start index.js --name pinterest-clone-backend
+            pm2 save
             echo "Deployment complete. Application is running on port 3000."
           EOF
