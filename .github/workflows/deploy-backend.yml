@@ -19,6 +19,7 @@ jobs:
         env:
           EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          MONGO_URL: ${{ secrets.MONGO_URL }}
         run: |
           echo "Deploying to EC2 instance at $EC2_PUBLIC_IP..."
           mkdir -p ~/.ssh
@@ -26,13 +27,19 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r backend/ ec2-user@$EC2_PUBLIC_IP:/home/ec2-user/
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP << 'EOF'
+            echo "Creating .env file with MONGO_URL..."
+            echo "MONGO_URL=$MONGO_URL" > /home/ec2-user/backend/.env
+            echo ".env file created successfully."
+
             echo "Installing dependencies..."
             cd /home/ec2-user/backend
             npm install
+
             echo "Starting the application with PM2..."
             pm2 stop pinterest-clone-backend || true
-            pm2 start index.js --name pinterest-clone-backend
+            pm2 start index.js --name pinterest-clone-backend --env production
             pm2 save
+
             echo "Restarting Nginx..."
             sudo systemctl restart nginx
             echo "Deployment complete. Application is running on port 3000."
